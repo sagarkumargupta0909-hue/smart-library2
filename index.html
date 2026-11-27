@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Smart Library Shelf Control</title>
+  <style>
+    * { box-sizing: border-box; font-family: system-ui, -apple-system, sans-serif; }
+    body { margin: 0; background: #eef2f7; display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 16px; }
+    .card { width: 100%; max-width: 440px; background: #fff; border-radius: 14px; padding: 28px; box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08); text-align: center; }
+    h1 { margin: 0 0 8px; font-size: 24px; color: #1e293b; }
+    .subtitle { margin: 0 0 24px; color: #64748b; font-size: 14px; }
+    .subject-btn { width: 100%; padding: 14px 18px; margin-bottom: 12px; font-size: 16px; font-weight: 600; border: 2px solid transparent; border-radius: 10px; cursor: pointer; transition: all 0.2s ease; background: #f8fafc; color: #0f172a; }
+    .subject-btn:hover { transform: translateY(-1px); background: #f1f5f9; }
+    .subject-btn.active.physics { background: #dbeafe; border-color: #2563eb; color: #1d4ed8; }
+    .subject-btn.active.maths { background: #dcfce7; border-color: #16a34a; color: #15803d; }
+    .subject-btn.active.cs { background: #fef3c7; border-color: #d97706; color: #b45309; }
+    .off-btn { width: 100%; padding: 12px 18px; margin-top: 8px; font-size: 15px; font-weight: 600; border: none; border-radius: 10px; cursor: pointer; background: #ef4444; color: #fff; }
+    .off-btn:hover { background: #dc2626; }
+    .status-box { margin-top: 20px; padding: 12px; border-radius: 8px; background: #f1f5f9; color: #334155; font-size: 14px; font-weight: 600; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Smart Library Blocks</h1>
+    <p class="subtitle">Press a subject button to glow its shelf light</p>
+
+    <button id="btn-physics" class="subject-btn physics" onclick="setShelf('physics')">Physics Block</button>
+    <button id="btn-maths" class="subject-btn maths" onclick="setShelf('maths')">Mathematics Block</button>
+    <button id="btn-cs" class="subject-btn cs" onclick="setShelf('cs')">Computer Science Block</button>
+
+    <button class="off-btn" onclick="setShelf('none')">Turn All Lights Off</button>
+
+    <div id="status-display" class="status-box">Active Light: None</div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getDatabase, ref, update, onValue } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "YOUR_API_KEY",
+      authDomain: "smart-library-ed823.firebaseapp.com",
+      databaseURL: "https://smart-library-ed823-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "smart-library-ed823",
+      storageBucket: "smart-library-ed823.appspot.com",
+      messagingSenderId: "YOUR_SENDER_ID",
+      appId: "YOUR_APP_ID"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+    const libraryRef = ref(db, "library");
+
+    window.setShelf = function(subject) {
+      const updates = {
+        "active_block": subject,
+        "blocks/physics/light_on": subject === "physics",
+        "blocks/maths/light_on": subject === "maths",
+        "blocks/cs/light_on": subject === "cs"
+      };
+      update(libraryRef, updates);
+    };
+
+    const labels = {
+      physics: "Physics Block",
+      maths: "Mathematics Block",
+      cs: "Computer Science Block",
+      none: "None (All Lights Off)"
+    };
+
+    onValue(ref(db, "library/active_block"), (snapshot) => {
+      const current = snapshot.val() || "none";
+      document.getElementById("status-display").textContent = "Active Light: " + (labels[current] || current);
+
+      ["physics", "maths", "cs"].forEach((subj) => {
+        const btn = document.getElementById("btn-" + subj);
+        if (current === subj) {
+          btn.classList.add("active");
+        } else {
+          btn.classList.remove("active");
+        }
+      });
+    });
+  </script>
+</body>
+</html>
